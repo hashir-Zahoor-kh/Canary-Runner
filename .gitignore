@@ -1,0 +1,16 @@
+# Compiled binary produced by `go build`
+/canary-runner
+
+# Go test/bench artefacts
+*.test
+*.out
+coverage.*
+
+# IDE / editor scratch
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Local Claude Code settings — keep out of the repo
+/.claude/
