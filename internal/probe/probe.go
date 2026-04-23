@@ -15,10 +15,11 @@ import (
 // It lives separately from Result so that a single Target can be probed many
 // times — each probe produces its own Result, but the Target does not change.
 type Target struct {
-	Name    string        // Human-readable name, e.g. "checkout-api"
-	URL     string        // Full URL, including scheme
-	Method  string        // HTTP verb, e.g. "GET"
-	Timeout time.Duration // Per-request timeout; the probe is cancelled if exceeded
+	Name     string        // Human-readable name, e.g. "checkout-api"
+	URL      string        // Full URL, including scheme
+	Method   string        // HTTP verb, e.g. "GET"
+	Timeout  time.Duration // Per-request timeout; the probe is cancelled if exceeded
+	Interval time.Duration // How often the Scheduler re-runs this probe
 }
 
 // Result captures the outcome of a single probe execution.

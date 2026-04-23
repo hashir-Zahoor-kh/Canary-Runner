@@ -1,0 +1,20 @@
+# Canary Runner example configuration.
+#
+# Only `name` and `url` are required — every other field falls back to the
+# defaults documented in internal/config/config.go.
+targets:
+  - name: "example-com"
+    url: "https://example.com"
+    method: "GET"
+    timeout_seconds: 5
+    interval_seconds: 10
+    slo:
+      availability_target_percent: 99.9
+      latency_target_ms: 500
+      latency_slo_percent: 95.0
+      window_days: 30
+
+  - name: "httpbin-status-200"
+    url: "https://httpbin.org/status/200"
+    interval_seconds: 15
+    # everything else inherits defaults
