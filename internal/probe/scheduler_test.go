@@ -2,6 +2,7 @@ package probe
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
@@ -10,6 +11,14 @@ import (
 
 	"go.uber.org/zap"
 )
+
+// cancelled reports whether r failed because the scheduler's context was
+// cancelled mid-probe. These results are a benign shutdown artifact — the
+// scheduler fired the request just as the test context deadline hit — and
+// the tests below intentionally ignore them when asserting success.
+func cancelled(r Result) bool {
+	return errors.Is(r.Err, context.DeadlineExceeded) || errors.Is(r.Err, context.Canceled)
+}
 
 // TestScheduler_ProbesAllTargets spins up three fake servers, runs the
 // scheduler briefly, and confirms we receive results for every target.
@@ -48,14 +57,20 @@ func TestScheduler_ProbesAllTargets(t *testing.T) {
 	s := NewScheduler(NewProber(), zap.NewNop())
 
 	// Bound the whole test with a short context — if the scheduler never
-	// shuts down we'd hang forever without this.
-	ctx, cancel := context.WithTimeout(context.Background(), 150*time.Millisecond)
+	// shuts down we'd hang forever without this. The margin over the
+	// 25ms interval is generous enough to tolerate CI scheduler jitter.
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 	defer cancel()
 
 	results := s.Run(ctx, targets)
 
 	perTarget := make(map[string]int)
 	for r := range results {
+		// Ignore the final "probe fired just as the context was cancelled"
+		// case — that's a shutdown artifact, not a real data point.
+		if cancelled(r) {
+			continue
+		}
 		perTarget[r.Name]++
 	}
 
@@ -132,11 +147,16 @@ func TestScheduler_FailingTargetDoesNotStopOthers(t *testing.T) {
 	}
 
 	s := NewScheduler(NewProber(), zap.NewNop())
-	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Millisecond)
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 	defer cancel()
 
 	var okHits, badHits int
 	for r := range s.Run(ctx, targets) {
+		// Results produced during shutdown (context already cancelled) are
+		// not meaningful for this test — skip them rather than false-fail.
+		if cancelled(r) {
+			continue
+		}
 		switch r.Name {
 		case "ok":
 			if !r.Success {

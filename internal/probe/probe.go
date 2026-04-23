@@ -29,6 +29,7 @@ type Target struct {
 type Result struct {
 	Name       string        // Copied from Target.Name so consumers don't need the Target
 	URL        string        // Copied from Target.URL for the same reason
+	Method     string        // HTTP method actually sent (after defaults), used for metric labels
 	Success    bool          // True if a 2xx response was received before the timeout
 	StatusCode int           // HTTP status code, or 0 if the request never completed
 	Latency    time.Duration // Wall-clock time from request start to response-headers received
@@ -86,10 +87,13 @@ func (p *Prober) Do(ctx context.Context, t Target) Result {
 	defer cancel()
 
 	// Build the Result up-front so that every early-return path produces a
-	// well-formed record. We overwrite fields as we learn more.
+	// well-formed record. We overwrite fields as we learn more. Method is
+	// set to the already-defaulted value so consumers never see an empty
+	// string, regardless of what the caller passed on the Target.
 	result := Result{
-		Name: t.Name,
-		URL:  t.URL,
+		Name:   t.Name,
+		URL:    t.URL,
+		Method: method,
 	}
 
 	// NewRequestWithContext fails on malformed URLs or invalid methods.
