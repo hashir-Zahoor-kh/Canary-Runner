@@ -19,13 +19,14 @@ It is designed to be operated like an SRE tool, not a hobby script:
 ## Table of Contents
 
 1. [Quick start](#quick-start)
-2. [Architecture](#architecture)
-3. [SLOs and error budgets explained](#slos-and-error-budgets-explained)
-4. [Configuration reference](#configuration-reference)
-5. [Metrics reference](#metrics-reference)
-6. [Alerts](#alerts)
-7. [Running with Prometheus and Grafana](#running-with-prometheus-and-grafana)
-8. [Development](#development)
+2. [Demo](#demo)
+3. [Architecture](#architecture)
+4. [SLOs and error budgets explained](#slos-and-error-budgets-explained)
+5. [Configuration reference](#configuration-reference)
+6. [Metrics reference](#metrics-reference)
+7. [Alerts](#alerts)
+8. [Running with Prometheus and Grafana](#running-with-prometheus-and-grafana)
+9. [Development](#development)
 
 ---
 
@@ -66,6 +67,28 @@ Flags:
 |------------------|----------------------|--------------------------------------------|
 | `-config`        | `config.yaml`        | Path to the YAML config file               |
 | `-metrics-addr`  | `:9090`              | Address for the `/metrics` and `/health` server |
+
+---
+
+## Demo
+
+A live snapshot of Canary Runner monitoring two real targets
+(`example.com` and `httpbin.org/status/200`):
+
+![Canary Runner — /metrics scrape on the left, live structured probe logs on the right](docs/screenshots/metrics-and-logs.png)
+
+- **Left pane** — the output of `curl -s http://localhost:9090/metrics | grep canary_`,
+  showing every metric family the exporter publishes: probe success
+  gauges, latency histograms, SLO compliance, error budget consumed /
+  remaining, and the cumulative probes counter.
+- **Right pane** — the running binary's stderr stream, one
+  zap-formatted JSON line per probe. Each line carries the full picture
+  for that probe: HTTP status, latency, the rolling availability and
+  latency SLO percents, total / consumed / remaining error-budget
+  minutes, and the boolean `error_budget_exhausted` flag. Notice
+  `httpbin-status-200` with `availability_slo_percent: 90` and
+  `error_budget_exhausted: true` — that's a real failure mode visible
+  end-to-end without any external observability stack wired up.
 
 ---
 
