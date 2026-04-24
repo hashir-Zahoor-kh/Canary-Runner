@@ -1,0 +1,24 @@
+# Keep the docker build context small. Anything not needed for `go build`
+# inside the builder stage belongs here.
+.git
+.gitignore
+.github
+.claude
+.vscode
+.idea
+
+# Tests are compiled in-tree by `go build ./...`; we don't ship test
+# binaries, but we do want the source to be present for `go test` if a
+# user wants to run it inside the container. So tests are NOT excluded.
+
+# Local artefacts
+*.log
+*.out
+canary-runner
+/out
+/dist
+
+# Documentation isn't needed at build time
+README.md
+LICENSE
+docs/
