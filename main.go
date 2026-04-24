@@ -18,6 +18,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/hashir/canary-runner/internal/alerter"
 	"github.com/hashir/canary-runner/internal/budget"
 	"github.com/hashir/canary-runner/internal/config"
 	"github.com/hashir/canary-runner/internal/metrics"
@@ -74,6 +75,9 @@ func main() {
 	calc := slo.NewCalculator(slo.RealClock{}, sloEndpoints)
 	tracker := budget.NewTracker(budget.RealClock{}, calc, budgetEndpoints)
 	exporter := metrics.NewExporter()
+	// Alerts go to stdout (one JSON line per alert) so operators can pipe
+	// them into a log aggregator separately from zap's stderr stream.
+	alrt := alerter.NewAlerter(alerter.RealClock{}, os.Stdout)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -119,6 +123,19 @@ func main() {
 		exporter.RecordResult(r)
 		exporter.UpdateSLO(r.Name, avail, lat)
 		exporter.UpdateBudget(r.Name, bud.ConsumedMinutes, bud.RemainingPercent)
+
+		// Feed the alerter the same snapshot the log line below will show.
+		// We use availability as the headline slo_compliance_percent because
+		// that's the one the alert thresholds are actually gated on.
+		_ = alrt.Evaluate(alerter.Input{
+			Endpoint:                    r.Name,
+			URL:                         r.URL,
+			Success:                     r.Success,
+			SLOCompliancePercent:        avail,
+			ErrorBudgetRemainingPercent: bud.RemainingPercent,
+			ErrorBudgetRemainingMinutes: bud.RemainingMinutes,
+			ErrorBudgetExhausted:        bud.Exhausted,
+		})
 
 		logger.Info("probe complete",
 			zap.String("endpoint", r.Name),
