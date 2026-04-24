@@ -86,21 +86,21 @@ Flags:
        ┌─────────────────────────┐
        │   main.go probe loop    │──────────────┐
        └────┬───────┬────────────┘              │
-            │       │                            │
-            ▼       ▼                            ▼
-     ┌──────────┐ ┌──────────┐         ┌─────────────────┐
-     │   slo.   │ │ budget.  │         │ metrics.        │
-     │ Calculator│ │ Tracker │         │ Exporter        │
-     │ (rolling │ │ (timed   │         │ (Prometheus)    │
-     │  window) │ │  state)  │         └────────┬────────┘
-     └────┬─────┘ └────┬─────┘                  │
-          │            │                        ▼
-          │            │              ┌──────────────────┐
-          │            │              │ HTTP :9090       │
-          │            │              │ /metrics /health │
-          │            │              └──────────────────┘
-          │            │
-          ▼            ▼
+            │       │                           │
+            ▼       ▼                           ▼
+     ┌──────────┐  ┌──────────┐         ┌─────────────────┐
+     │   slo.   │  │ budget.  │         │ metrics.        │
+     │Calculator│  │  Tracker │         │ Exporter        │
+     │ (rolling │  │ (timed   │         │ (Prometheus)    │
+     │  window) │  │  state)  │         └────────┬────────┘
+     └────┬─────┘  └────┬─────┘                  │
+          │             │                        ▼
+          │             │              ┌──────────────────┐
+          │             │              │ HTTP :9090       │
+          │             │              │ /metrics /health │
+          │             │              └──────────────────┘
+          │             │
+          ▼             ▼
        ┌───────────────────────┐         ┌───────────────┐
        │   alerter.Alerter     │────────▶│  stdout       │
        │ (edge-triggered, 4    │  JSON   │  (one line    │
@@ -112,14 +112,14 @@ Flags:
 
 Each internal package has a single, narrow purpose:
 
-| Package                     | Responsibility                                    |
-|-----------------------------|---------------------------------------------------|
-| `internal/config`           | Load + validate YAML, apply defaults              |
-| `internal/probe`            | HTTP probe + per-target scheduling goroutines     |
-| `internal/slo`              | Rolling-window availability and latency compliance |
-| `internal/budget`           | Error budget total / consumed / remaining          |
+| Package                     | Responsibility                                        |
+|-----------------------------|-------------------------------------------------------|
+| `internal/config`           | Load + validate YAML, apply defaults                  |
+| `internal/probe`            | HTTP probe + per-target scheduling goroutines         |
+| `internal/slo`              | Rolling-window availability and latency compliance    |
+| `internal/budget`           | Error budget total / consumed / remaining             |
 | `internal/metrics`          | Prometheus collectors + `/metrics` and `/health` HTTP |
-| `internal/alerter`          | Edge-triggered alert emission as JSON lines        |
+| `internal/alerter`          | Edge-triggered alert emission as JSON lines           |
 
 ---
 
